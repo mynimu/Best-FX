@@ -261,3 +261,12 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// =================== PWA: Registriere Service Worker ===================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Service Worker registriert:', reg))
+            .catch(err => console.warn('Service Worker Registrierung fehlgeschlagen:', err));
+    });
+}
