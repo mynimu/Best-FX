@@ -27,6 +27,9 @@ let cards = [
     }
 ];
 
+// Persistenz ausschalten: App verwendet nur hartkodierte Karten (Default)
+const PERSISTENCE = false;
+
 // Beim Laden der Seite
 document.addEventListener('DOMContentLoaded', () => {
     loadFromStorage();
@@ -400,10 +403,20 @@ function updateCurrencyLabels() {
 
 // ========== Speicher Management ==========
 function saveToStorage() {
+    if (!PERSISTENCE) {
+        console.info('Speicherung deaktiviert (PERSISTENCE=false) — kein localStorage-Eintrag erstellt.');
+        return;
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
 }
 
 function loadFromStorage() {
+    // Persistenz deaktiviert: benutze immer die hartkodierten Default-Karten
+    if (!PERSISTENCE) {
+        // nothing to read; ensure debug shows correct state
+        updateDebug();
+        return;
+    }
     try {
         const data = localStorage.getItem(STORAGE_KEY);
         if (data) {
@@ -433,8 +446,12 @@ function updateDebug() {
     const status = document.getElementById('debug-status');
     const storageDiv = document.getElementById('debug-storage');
     try {
-        const data = localStorage.getItem(STORAGE_KEY);
         if (status) status.textContent = `Karten im Arbeitsspeicher: ${cards ? cards.length : 0}`;
+        if (!PERSISTENCE) {
+            if (storageDiv) storageDiv.textContent = 'Persistenz deaktiviert (hardcoded cards in use)';
+            return;
+        }
+        const data = localStorage.getItem(STORAGE_KEY);
         if (storageDiv) storageDiv.textContent = `localStorage[${STORAGE_KEY}]: ${data ? (data.length > 400 ? data.slice(0,400)+'...': data) : 'leer'}`;
     } catch (e) {
         if (status) status.textContent = 'Fehler beim Lesen von localStorage';
