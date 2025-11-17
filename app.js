@@ -32,7 +32,16 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFromStorage();
     updateCurrencyLabels();
     renderCards();
-    updateComparison();
+    // Beim Laden automatisch die konfigurierten Raten abrufen und danach UI aktualisieren
+    (async () => {
+        try {
+            await autoFetchAllRates();
+        } catch (e) {
+            console.warn('Auto-Fetch fehlgeschlagen:', e);
+        }
+        renderCards();
+        updateComparison();
+    })();
     
     // Event Listener für Live-Updates
     document.getElementById('transaction-amount').addEventListener('input', updateComparison);
@@ -146,11 +155,63 @@ function renderCards() {
             <h3>${escapeHtml(card.name)}</h3>
             <span class="card-fee-badge">${card.fee}%</span>
             <p style="font-size: 0.9rem; color: #666;">Fremdwährungsgebühr</p>
-            <p style="font-size:0.9rem; color:#444; margin-top:8px;">${card.lastFetchedRate ? 'Letzter Kurs: ' + card.lastFetchedRate : (card.fixedRate ? 'Fixe Rate: ' + card.fixedRate : '')}</p>
+            <p style="font-size:0.9rem; color:#444; margin-top:8px;">${card.lastFetchedRate ? 'Letzter Kurs: ' + card.lastFetchedRate + (card.lastFetchedAt ? ' (aktualisiert: ' + formatDateTime(card.lastFetchedAt) + ')' : '') : (card.fixedRate ? 'Fixe Rate: ' + card.fixedRate : '')}</p>
             <p style="font-size:0.85rem; color:#666;">${card.rateUrl ? 'Rate-Quelle: ' + card.rateUrl : 'Keine Rate-Quelle'}</p>
             <div style="margin-top:10px;"><button class="btn-secondary" onclick="openTestModal(${card.id})">🔎 Teste/konfiguriere Rate</button></div>
         </div>
     `).join('');
+}
+
+// Fetch the configured rate for a single card and save result
+async function fetchRateForCard(card, silent = false) {
+    if (!card || !card.rateUrl || !card.rateRegex) throw new Error('Keine Rate-Quelle oder Regex konfiguriert');
+    try {
+        const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(card.rateUrl);
+        const res = await fetch(proxy);
+        if (!res.ok) throw new Error('Fehler beim Laden der Seite: ' + res.status);
+        const text = await res.text();
+
+        let regex;
+        try { regex = new RegExp(card.rateRegex, 'i'); } catch (e) { throw new Error('Ungültiger Regex: ' + e.message); }
+        const match = text.match(regex);
+        if (!match) throw new Error('Kein Treffer mit dem Regex gefunden');
+
+        // Find first numeric group
+        let num = null;
+        for (let i = 1; i < match.length; i++) {
+            const cleaned = match[i].replace(/[^0-9,\.\-]/g, '').replace(',', '.');
+            if (cleaned && !isNaN(Number(cleaned))) { num = Number(cleaned); break; }
+        }
+        if (num == null) {
+            const cleaned = match[0].replace(/[^0-9,\.\-]/g, '').replace(',', '.');
+            if (cleaned && !isNaN(Number(cleaned))) num = Number(cleaned);
+        }
+        if (num == null) throw new Error('Keine Zahl extrahiert');
+
+        const finalRate = num * (1 + ((card.rateMarkup || 0) / 100));
+        card.lastFetchedRate = finalRate;
+        card.lastFetchedAt = new Date().toISOString();
+        saveToStorage();
+        return finalRate;
+    } catch (err) {
+        if (!silent) alert('Fehler beim Abrufen der Karte-Rate: ' + err.message);
+        throw err;
+    }
+}
+
+// Auto-fetch all configured card rates (used on load)
+async function autoFetchAllRates() {
+    for (const card of cards) {
+        if (card.rateUrl && card.rateRegex) {
+            try {
+                await fetchRateForCard(card, true);
+            } catch (e) {
+                console.warn('Auto-Fetch für Karte fehlgeschlagen:', card.name, e.message);
+            }
+            // kleine Pause, um Server nicht zu überlasten
+            await new Promise(r => setTimeout(r, 250));
+        }
+    }
 }
 
 // ========== Modal: Test / Edit Rate Source ==========
@@ -378,6 +439,14 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function formatDateTime(iso) {
+    if (!iso) return '';
+    try {
+        const d = new Date(iso);
+        return d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return iso; }
 }
 
 // ========== Wechselkurs Abrufen (on-demand) ==========
