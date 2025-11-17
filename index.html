@@ -141,11 +141,25 @@
 
     <script src="app.js"></script>
     <script>
-        // Safety: ensure renderCards and updateDebug ran; if there's an error earlier, show it in the debug panel.
+        // Versuche automatisch die Karten und Raten zu laden (sichtbar auf mobilen Geräten)
         (function(){
             try {
-                if (typeof renderCards === 'function') renderCards();
                 if (typeof updateDebug === 'function') updateDebug();
+                if (typeof renderCards === 'function') renderCards();
+                // Starte eine automatische Aktualisierung nach kurzer Verzögerung
+                setTimeout(async () => {
+                    try {
+                        const status = document.getElementById('debug-status');
+                        if (status) status.textContent = 'Automatische Aktualisierung...';
+                        if (typeof refreshAllRatesUI === 'function') await refreshAllRatesUI();
+                        if (status) status.textContent = 'Fertig';
+                    } catch (err) {
+                        const status = document.getElementById('debug-status');
+                        const storage = document.getElementById('debug-storage');
+                        if (status) status.textContent = 'Fehler bei Auto-Aktualisierung';
+                        if (storage) storage.textContent = String(err);
+                    }
+                }, 500);
             } catch (err) {
                 const status = document.getElementById('debug-status');
                 const storage = document.getElementById('debug-storage');
