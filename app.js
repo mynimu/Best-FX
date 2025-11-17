@@ -140,7 +140,7 @@ function deleteCard(id) {
 function renderCards() {
     const cardsList = document.getElementById('cards-list');
     
-    // Show predefined cards in read-only mode (no edit/delete)
+    // Show predefined cards in read-only mode with a Test/Configure button
     cardsList.innerHTML = cards.map(card => `
         <div class="card-item">
             <h3>${escapeHtml(card.name)}</h3>
@@ -148,8 +148,86 @@ function renderCards() {
             <p style="font-size: 0.9rem; color: #666;">Fremdwährungsgebühr</p>
             <p style="font-size:0.9rem; color:#444; margin-top:8px;">${card.lastFetchedRate ? 'Letzter Kurs: ' + card.lastFetchedRate : (card.fixedRate ? 'Fixe Rate: ' + card.fixedRate : '')}</p>
             <p style="font-size:0.85rem; color:#666;">${card.rateUrl ? 'Rate-Quelle: ' + card.rateUrl : 'Keine Rate-Quelle'}</p>
+            <div style="margin-top:10px;"><button class="btn-secondary" onclick="openTestModal(${card.id})">🔎 Teste/konfiguriere Rate</button></div>
         </div>
     `).join('');
+}
+
+// ========== Modal: Test / Edit Rate Source ==========
+let __modalCardId = null;
+function openTestModal(cardId) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return alert('Karte nicht gefunden');
+    __modalCardId = cardId;
+    const title = document.getElementById('modal-title');
+    if (title) title.textContent = `Test / Konfiguration: ${card.name}`;
+    const urlElem = document.getElementById('modal-rate-url');
+    const regexElem = document.getElementById('modal-rate-regex');
+    const markupElem = document.getElementById('modal-rate-markup');
+    const resultElem = document.getElementById('modal-result');
+    if (urlElem) urlElem.value = card.rateUrl || '';
+    if (regexElem) regexElem.value = card.rateRegex || '';
+    if (markupElem) markupElem.value = card.rateMarkup || 0;
+    if (resultElem) resultElem.textContent = '';
+    const modal = document.getElementById('test-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeTestModal() {
+    __modalCardId = null;
+    const modal = document.getElementById('test-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function testModalFetch() {
+    const url = document.getElementById('modal-rate-url').value.trim();
+    const regexStr = document.getElementById('modal-rate-regex').value.trim();
+    const markup = parseFloat(document.getElementById('modal-rate-markup').value) || 0;
+    const out = document.getElementById('modal-result');
+    if (!url || !regexStr) { if (out) out.textContent = 'Bitte URL und Regex angeben.'; return; }
+
+    if (out) out.textContent = 'Lade Seite...';
+    try {
+        const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+        const res = await fetch(proxy);
+        if (!res.ok) throw new Error('Fehler beim Laden der Seite: ' + res.status);
+        const text = await res.text();
+
+        let regex;
+        try { regex = new RegExp(regexStr, 'i'); } catch (e) { if (out) out.textContent = 'Ungültiger Regex: ' + e.message; return; }
+        const match = text.match(regex);
+        if (!match) { if (out) out.textContent = 'Kein Treffer mit dem Regex gefunden.'; return; }
+
+        // Extract numeric from groups
+        let num = null; let raw = null;
+        for (let i = 1; i < match.length; i++) {
+            const cleaned = match[i].replace(/[^0-9,\.\-]/g, '').replace(',', '.');
+            if (cleaned && !isNaN(Number(cleaned))) { num = Number(cleaned); raw = match[i]; break; }
+        }
+        if (num == null) {
+            const cleaned = match[0].replace(/[^0-9,\.\-]/g, '').replace(',', '.');
+            if (cleaned && !isNaN(Number(cleaned))) { num = Number(cleaned); raw = match[0]; }
+        }
+        if (num == null) { if (out) out.textContent = 'Keine Zahl extrahiert aus dem Treffer.'; return; }
+
+        const finalRate = num * (1 + (markup / 100));
+        if (out) out.innerHTML = `<strong>Treffer:</strong> ${escapeHtml(String(raw))}<br><strong>Extrahiert:</strong> ${num}<br><strong>Nach Aufschlag:</strong> ${finalRate}`;
+    } catch (err) {
+        if (out) out.textContent = 'Fehler beim Testen: ' + err.message;
+    }
+}
+
+function saveModalToCard() {
+    if (!__modalCardId) return alert('Keine Karte ausgewählt');
+    const card = cards.find(c => c.id === __modalCardId);
+    if (!card) return alert('Karte nicht gefunden');
+    card.rateUrl = document.getElementById('modal-rate-url').value.trim() || null;
+    card.rateRegex = document.getElementById('modal-rate-regex').value.trim() || null;
+    card.rateMarkup = parseFloat(document.getElementById('modal-rate-markup').value) || 0;
+    saveToStorage();
+    renderCards();
+    closeTestModal();
+    alert('Einstellungen auf Karte übernommen');
 }
 
 // ========== Vergleich & Berechnung ==========

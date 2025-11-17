@@ -77,6 +77,27 @@
                 <div id="cards-list" class="cards-list"></div>
             </section>
 
+            <!-- Modal: Test / Edit Rate Source -->
+            <div id="test-modal" class="modal" style="display:none; position:fixed; inset:0; align-items:center; justify-content:center; background:rgba(0,0,0,0.4);">
+                <div class="modal-content" style="background:#fff; padding:18px; width:90%; max-width:640px; border-radius:8px; box-shadow:0 6px 24px rgba(0,0,0,0.2);">
+                    <h3 id="modal-title">Rate Test</h3>
+                    <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+                        <label>Rate-URL</label>
+                        <input id="modal-rate-url" type="text" style="width:100%" />
+                        <label>Rate-Regex</label>
+                        <textarea id="modal-rate-regex" rows="3" style="width:100%"></textarea>
+                        <label>Aufschlag (%)</label>
+                        <input id="modal-rate-markup" type="number" step="0.01" value="0" style="width:120px" />
+                        <div style="display:flex; gap:8px; margin-top:6px;">
+                            <button class="btn-primary" onclick="testModalFetch()">🔎 Testen</button>
+                            <button class="btn-secondary" onclick="saveModalToCard()">💾 Auf Karte speichern</button>
+                            <button class="btn" onclick="closeTestModal()">✖ Schließen</button>
+                        </div>
+                        <div id="modal-result" style="margin-top:10px; color:#222; background:#f8f8f8; padding:8px; border-radius:6px; min-height:36px;"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Vergleich Resultat -->
             <section class="comparison-section" id="comparison-section">
                 <h2>Vergleich der Gesamtkosten</h2>
