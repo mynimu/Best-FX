@@ -30,6 +30,9 @@ let cards = [
 // Persistenz ausschalten: App verwendet nur hartkodierte Karten (Default)
 const PERSISTENCE = false;
 
+// Optional: Service Worker Registrierung aktivieren/ deaktivieren (zum Debuggen auf mobilen Geräten)
+const ENABLE_SERVICE_WORKER = false;
+
 // Beim Laden der Seite
 document.addEventListener('DOMContentLoaded', () => {
     loadFromStorage();
@@ -459,6 +462,34 @@ function updateDebug() {
     }
 }
 
+// Expose SW status in debug storage if available
+function swStatus() {
+    const storageDiv = document.getElementById('debug-storage');
+    if (!storageDiv) return;
+    if (!ENABLE_SERVICE_WORKER) {
+        storageDiv.textContent = (storageDiv.textContent ? storageDiv.textContent + '\n' : '') + 'Service Worker: deaktiviert';
+        return;
+    }
+    storageDiv.textContent = (storageDiv.textContent ? storageDiv.textContent + '\n' : '') + ('Service Worker: ' + (navigator.serviceWorker ? 'verfügbar' : 'nicht verfügbar'));
+}
+
+// Manual init used by the UI button: re-render and refresh rates
+async function manualInit() {
+    try {
+        updateDebug();
+        renderCards();
+        const status = document.getElementById('debug-status');
+        if (status) status.textContent = 'Manuelle Initialisierung...';
+        if (typeof refreshAllRatesUI === 'function') await refreshAllRatesUI();
+        if (status) status.textContent = 'Manuelle Initialisierung fertig';
+    } catch (e) {
+        const status = document.getElementById('debug-status');
+        const storage = document.getElementById('debug-storage');
+        if (status) status.textContent = 'Fehler bei manueller Initialisierung';
+        if (storage) storage.textContent = String(e);
+    }
+}
+
 function clearAllData() {
     if (confirm('Möchtest du wirklich ALLE Daten löschen? Dies kann nicht rückgängig gemacht werden.')) {
         cards = [];
@@ -613,10 +644,12 @@ async function fetchAndSetRate() {
     }
 
 // =================== PWA: Registriere Service Worker ===================
-if ('serviceWorker' in navigator) {
+if (ENABLE_SERVICE_WORKER && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
             .then(reg => console.log('Service Worker registriert:', reg))
             .catch(err => console.warn('Service Worker Registrierung fehlgeschlagen:', err));
     });
+} else {
+    console.info('Service Worker Registrierung deaktiviert (ENABLE_SERVICE_WORKER=false)');
 }
