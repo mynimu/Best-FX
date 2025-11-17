@@ -396,11 +396,28 @@ function saveToStorage() {
 }
 
 function loadFromStorage() {
-    // App verwendet fest hartkodierte Karten. Schreibe diese ins Storage zur Persistenz.
     try {
-        saveToStorage();
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) {
+            try {
+                const parsed = JSON.parse(data);
+                // If stored a wrapper { cards: [...] }
+                if (parsed && Array.isArray(parsed)) {
+                    if (parsed.length > 0) cards = parsed;
+                } else if (parsed && Array.isArray(parsed.cards)) {
+                    if (parsed.cards.length > 0) cards = parsed.cards;
+                }
+            } catch (e) {
+                console.warn('Fehler beim Parsen der gespeicherten Daten, verwende Default-Cards', e);
+            }
+        }
+
+        // Wenn nach dem Lesen keine Karten vorhanden sind, schreibe die hardcodierten Defaults in den Storage
+        if (!cards || cards.length === 0) {
+            saveToStorage();
+        }
     } catch (err) {
-        console.warn('Konnte hartkodierte Karten nicht in Storage schreiben:', err);
+        console.warn('Konnte Storage nicht lesen/schreiben:', err);
     }
 }
 
