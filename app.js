@@ -52,7 +52,13 @@ function addCard() {
         cards.push({
             id: Date.now(),
             name: name,
-            fee: fee
+            fee: fee,
+            // optional fields for per-card rate sourcing
+            rateUrl: null,
+            rateRegex: null,
+            lastFetchedRate: null,
+            fixedRate: null,
+            rateMarkup: 0
         });
 
         saveToStorage();
@@ -78,8 +84,21 @@ function editCard(id) {
     const newFee = prompt('Gebühr (%):', card.fee);
     if (newFee === null) return;
 
+    // Optional: allow setting a rate source URL and a regex for extraction
+    const newRateUrl = prompt('Optionale Seite mit Wechselkurs (URL) (leer lassen, falls nicht genutzt):', card.rateUrl || '');
+    if (newRateUrl === null) return;
+
+    const newRateRegex = prompt('Regex zum Extrahieren des Wechselkurses aus der Seite (z.B. ([0-9]+\\.?[0-9]+)) :', card.rateRegex || '');
+    if (newRateRegex === null) return;
+
+    const newRateMarkup = prompt('Optionaler Aufschlag auf gefundene Rate in % (z.B. 0.5 für 0.5%):', card.rateMarkup || 0);
+    if (newRateMarkup === null) return;
+
     card.name = newName.trim();
     card.fee = parseFloat(newFee) || 0;
+    card.rateUrl = newRateUrl.trim() || null;
+    card.rateRegex = newRateRegex.trim() || null;
+    card.rateMarkup = parseFloat(newRateMarkup) || 0;
 
     saveToStorage();
     renderCards();
@@ -108,8 +127,11 @@ function renderCards() {
             <h3>${escapeHtml(card.name)}</h3>
             <span class="card-fee-badge">${card.fee}%</span>
             <p style="font-size: 0.9rem; color: #666;">Fremdwährungsgebühr</p>
+            <p style="font-size:0.9rem; color:#444; margin-top:8px;">${card.lastFetchedRate ? 'Letzter Kurs: ' + card.lastFetchedRate : (card.fixedRate ? 'Fixe Rate: ' + card.fixedRate : '')}</p>
+            <p style="font-size:0.85rem; color:#666;">${card.rateUrl ? 'Rate-Quelle konfiguriert' : 'Keine Rate-Quelle'}</p>
             <div class="card-actions">
                 <button class="btn-edit" onclick="editCard(${card.id})">✏️ Bearbeiten</button>
+                <button class="btn-secondary" onclick="fetchRateFromCard(${card.id})">🔎 Kurs von Seite holen</button>
                 <button class="btn-delete" onclick="deleteCard(${card.id})">🗑️ Löschen</button>
             </div>
         </div>
@@ -294,6 +316,54 @@ async function fetchAndSetRate() {
     }
     setTimeout(() => { if (info.textContent.startsWith('Kurs wird')) info.textContent = ''; }, 3000);
 }
+
+    // ========== Per-Card Seiten-Abfrage (Scraping via CORS-Proxy) ==========
+    async function fetchRateFromCard(cardId) {
+        const card = cards.find(c => c.id === cardId);
+        if (!card) return alert('Karte nicht gefunden');
+        if (!card.rateUrl || !card.rateRegex) return alert('Keine Rate-Quelle oder Regex für diese Karte konfiguriert. Bitte Bearbeiten und URL/Regex hinzufügen.');
+
+        const infoMessage = `Lade Rate für ${card.name}...`;
+        console.log(infoMessage);
+
+        try {
+            // Use a simple CORS proxy (allorigins) to fetch arbitrary pages
+            const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(card.rateUrl);
+            const res = await fetch(proxy);
+            if (!res.ok) throw new Error('Fehler beim Laden der Seite: ' + res.status);
+            const text = await res.text();
+
+            // Apply regex
+            let regex;
+            try { regex = new RegExp(card.rateRegex, 'i'); } catch (e) { throw new Error('Ungültiger Regex: ' + e.message); }
+            const match = text.match(regex);
+            if (!match) throw new Error('Kein Treffer mit dem Regex gefunden');
+
+            // Find first numeric group in match
+            let num;
+            for (let i = 1; i < match.length; i++) {
+                const cleaned = match[i].replace(/[^0-9,\.\-]/g, '').replace(',', '.');
+                if (cleaned && !isNaN(Number(cleaned))) { num = Number(cleaned); break; }
+            }
+            if (num == null) {
+                // try the full match
+                const cleaned = match[0].replace(/[^0-9,\.\-]/g, '').replace(',', '.');
+                if (cleaned && !isNaN(Number(cleaned))) num = Number(cleaned);
+            }
+            if (num == null) throw new Error('Keine Zahl extrahiert');
+
+            // Apply optional markup (percent)
+            const finalRate = num * (1 + ((card.rateMarkup || 0) / 100));
+            card.lastFetchedRate = finalRate;
+            saveToStorage();
+            renderCards();
+            updateComparison();
+            alert(`Erfolgreich: Gefundener Kurs = ${num}, nach Aufschlag = ${finalRate}`);
+        } catch (err) {
+            console.error('Fehler beim Abrufen der Karte-Rate:', err);
+            alert('Fehler beim Abrufen der Rate: ' + err.message + '\nHinweis: Viele Bankseiten sind geschützt; nutze ggf. eine öffentliche Informationsseite oder gib die Rate manuell ein.');
+        }
+    }
 
 // =================== PWA: Registriere Service Worker ===================
 if ('serviceWorker' in navigator) {
