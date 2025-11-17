@@ -148,8 +148,15 @@ function deleteCard(id) {
 
 function renderCards() {
     const cardsList = document.getElementById('cards-list');
-    
+    const placeholder = document.getElementById('cards-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
     // Show predefined cards in read-only mode with a Test/Configure button
+    if (!cards || cards.length === 0) {
+        cardsList.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#999;">Keine Karten vorhanden</p>';
+        updateDebug();
+        return;
+    }
+
     cardsList.innerHTML = cards.map(card => `
         <div class="card-item">
             <h3>${escapeHtml(card.name)}</h3>
@@ -160,6 +167,7 @@ function renderCards() {
             <div style="margin-top:10px;"><button class="btn-secondary" onclick="openTestModal(${card.id})">🔎 Teste/konfiguriere Rate</button></div>
         </div>
     `).join('');
+    updateDebug();
 }
 
 // Fetch the configured rate for a single card and save result
@@ -418,6 +426,19 @@ function loadFromStorage() {
         }
     } catch (err) {
         console.warn('Konnte Storage nicht lesen/schreiben:', err);
+    }
+}
+
+function updateDebug() {
+    const status = document.getElementById('debug-status');
+    const storageDiv = document.getElementById('debug-storage');
+    try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (status) status.textContent = `Karten im Arbeitsspeicher: ${cards ? cards.length : 0}`;
+        if (storageDiv) storageDiv.textContent = `localStorage[${STORAGE_KEY}]: ${data ? (data.length > 400 ? data.slice(0,400)+'...': data) : 'leer'}`;
+    } catch (e) {
+        if (status) status.textContent = 'Fehler beim Lesen von localStorage';
+        if (storageDiv) storageDiv.textContent = String(e);
     }
 }
 

@@ -74,7 +74,13 @@
             <section class="cards-management">
                 <h2>Deine Kreditkarten</h2>
                 
-                <div id="cards-list" class="cards-list"></div>
+                <div id="cards-list" class="cards-list">
+                    <p id="cards-placeholder" style="grid-column:1/-1; text-align:center; color:#999;">Lade Karten...</p>
+                </div>
+                <div id="debug-info" style="margin-top:8px; font-size:0.85rem; color:#444; background:#f4f4f4; padding:8px; border-radius:6px; display:block;">
+                    <strong>Status:</strong> <span id="debug-status">initialisiert</span>
+                    <div id="debug-storage" style="margin-top:6px; word-break:break-all; color:#222;"></div>
+                </div>
                 <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
                     <button class="btn-primary" onclick="refreshAllRatesUI()">🔄 Alle Kurse aktualisieren</button>
                     <span id="refresh-status" style="color:#666; font-size:0.9rem;"></span>
