@@ -218,6 +218,36 @@ function saveToStorage() {
 function loadFromStorage() {
     const data = localStorage.getItem(STORAGE_KEY);
     cards = data ? JSON.parse(data) : [];
+
+    // Wenn noch keine Karten im Storage sind, füge exemplarische Karten hinzu
+    if (!cards || cards.length === 0) {
+        cards = [
+            {
+                id: 1001,
+                name: 'Easybank (EUR/USD) - Beispiel',
+                fee: 1.5,
+                rateUrl: 'https://www.easybank.at/markets/waehrungen-zinsen',
+                // extrahiert den Wert im <span data-streaming-last> für EUR-USD
+                rateRegex: '<tr[^>]*EUR-USD[^>]*>[\\s\\S]*?<span[^>]*data-streaming-last[^>]*>([0-9\\.,]+)<\\/span>',
+                lastFetchedRate: null,
+                fixedRate: null,
+                rateMarkup: 0
+            },
+            {
+                id: 1002,
+                name: 'CardComplete (USD) - Beispiel',
+                fee: 1.75,
+                rateUrl: 'https://www.cardcomplete.com/service/umsatznachricht/fremdwaehrungen/USD/',
+                // einfache Zelle mit class="text-end" enthält Verkaufskurs (Komma Dezimaltrennzeichen)
+                rateRegex: '<td\\s+class=["\\']text-end["\\'][^>]*>\\s*([0-9\\.,]+)\\s*<\\/td>',
+                lastFetchedRate: null,
+                fixedRate: null,
+                rateMarkup: 0
+            }
+        ];
+        saveToStorage();
+        console.log('Beispiel-Karten wurden hinzugefügt (falls kein Nutzer-Data vorhanden)');
+    }
 }
 
 function clearAllData() {
