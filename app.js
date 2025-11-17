@@ -262,6 +262,39 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// ========== Wechselkurs Abrufen (on-demand) ==========
+async function fetchRate(from, to) {
+    try {
+        const url = `https://api.exchangerate.host/convert?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=1`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Netzwerkantwort: ' + res.status);
+        const data = await res.json();
+        // data.info.rate enthält die Rate (1 from = rate to)
+        if (data && data.info && typeof data.info.rate === 'number') return data.info.rate;
+        if (data && data.result) return data.result; // fallback
+        throw new Error('Ungültiges API-Format');
+    } catch (err) {
+        console.warn('Fehler beim Abrufen des Wechselkurses:', err);
+        throw err;
+    }
+}
+
+async function fetchAndSetRate() {
+    const source = document.getElementById('source-currency').value;
+    const target = document.getElementById('target-currency').value;
+    const info = document.getElementById('rate-info');
+    info.textContent = 'Kurs wird abgerufen...';
+    try {
+        const rate = await fetchRate(source, target);
+        document.getElementById('exchange-rate').value = rate.toFixed(6);
+        info.textContent = `1 ${source} = ${rate.toFixed(6)} ${target}`;
+        updateComparison();
+    } catch (err) {
+        info.textContent = 'Fehler beim Abrufen des Kurses. Überprüfe die Internetverbindung.';
+    }
+    setTimeout(() => { if (info.textContent.startsWith('Kurs wird')) info.textContent = ''; }, 3000);
+}
+
 // =================== PWA: Registriere Service Worker ===================
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
