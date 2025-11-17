@@ -26,41 +26,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ========== Karten Management ==========
 function addCard() {
-    const name = document.getElementById('card-name').value.trim();
-    const fee = parseFloat(document.getElementById('card-fee').value) || 0;
+    try {
+        const nameInput = document.getElementById('card-name');
+        const feeInput = document.getElementById('card-fee');
+        
+        if (!nameInput || !feeInput) {
+            console.error('Input-Felder nicht gefunden');
+            alert('Fehler: Input-Felder nicht gefunden. Seite neu laden.');
+            return;
+        }
 
-    if (!name) {
-        alert('Bitte einen Namen für die Karte eingeben');
-        return;
+        const name = nameInput.value.trim();
+        const fee = parseFloat(feeInput.value) || 0;
+
+        if (!name) {
+            alert('Bitte einen Namen für die Karte eingeben');
+            return;
+        }
+
+        if (fee < 0) {
+            alert('Die Gebühr kann nicht negativ sein');
+            return;
+        }
+
+        cards.push({
+            id: Date.now(),
+            name: name,
+            fee: fee
+        });
+
+        saveToStorage();
+        nameInput.value = '';
+        feeInput.value = '0';
+        
+        renderCards();
+        updateComparison();
+        console.log('✓ Karte hinzugefügt:', name);
+    } catch (error) {
+        console.error('Fehler beim Hinzufügen der Karte:', error);
+        alert('Fehler beim Hinzufügen der Karte: ' + error.message);
     }
-
-    if (fee < 0) {
-        alert('Die Gebühr kann nicht negativ sein');
-        return;
-    }
-
-    cards.push({
-        id: Date.now(),
-        name: name,
-        fee: fee
-    });
-
-    saveToStorage();
-    document.getElementById('card-name').value = '';
-    document.getElementById('card-fee').value = '0';
-    
-    renderCards();
-    updateComparison();
 }
 
 function editCard(id) {
     const card = cards.find(c => c.id === id);
     if (!card) return;
 
-    const newName = prompt('Kartennname:', card.name);
+    const newName = prompt('Kartenname:', card.name);
     if (newName === null) return;
 
-    const newFee = prompt('Gebühr (%):',card.fee);
+    const newFee = prompt('Gebühr (%):', card.fee);
     if (newFee === null) return;
 
     card.name = newName.trim();
