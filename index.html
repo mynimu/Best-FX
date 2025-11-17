@@ -78,7 +78,7 @@
                     <p id="cards-placeholder" style="grid-column:1/-1; text-align:center; color:#999;">Lade Karten...</p>
                 </div>
                 <div id="debug-info" style="margin-top:8px; font-size:0.85rem; color:#444; background:#f4f4f4; padding:8px; border-radius:6px; display:block;">
-                    <strong>Status:</strong> <span id="debug-status">initialisiert</span>
+                    <strong>Status:</strong> <span id="debug-status">lade...</span>
                     <div id="debug-storage" style="margin-top:6px; word-break:break-all; color:#222;"></div>
                 </div>
                 <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
@@ -140,6 +140,20 @@
     </div>
 
     <script src="app.js"></script>
+    <script>
+        // Safety: ensure renderCards and updateDebug ran; if there's an error earlier, show it in the debug panel.
+        (function(){
+            try {
+                if (typeof renderCards === 'function') renderCards();
+                if (typeof updateDebug === 'function') updateDebug();
+            } catch (err) {
+                const status = document.getElementById('debug-status');
+                const storage = document.getElementById('debug-storage');
+                if (status) status.textContent = 'Fehler beim Initialisieren';
+                if (storage) storage.textContent = String(err);
+            }
+        })();
+    </script>
     <!-- Optional PWA install prompt helper -->
     <script>
         // Minimal listener that captures the beforeinstallprompt event for later use
