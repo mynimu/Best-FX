@@ -140,23 +140,14 @@ function deleteCard(id) {
 function renderCards() {
     const cardsList = document.getElementById('cards-list');
     
-    if (cards.length === 0) {
-        cardsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">Keine Karten hinzugefügt</p>';
-        return;
-    }
-
+    // Show predefined cards in read-only mode (no edit/delete)
     cardsList.innerHTML = cards.map(card => `
         <div class="card-item">
             <h3>${escapeHtml(card.name)}</h3>
             <span class="card-fee-badge">${card.fee}%</span>
             <p style="font-size: 0.9rem; color: #666;">Fremdwährungsgebühr</p>
             <p style="font-size:0.9rem; color:#444; margin-top:8px;">${card.lastFetchedRate ? 'Letzter Kurs: ' + card.lastFetchedRate : (card.fixedRate ? 'Fixe Rate: ' + card.fixedRate : '')}</p>
-            <p style="font-size:0.85rem; color:#666;">${card.rateUrl ? 'Rate-Quelle konfiguriert' : 'Keine Rate-Quelle'}</p>
-            <div class="card-actions">
-                <button class="btn-edit" onclick="editCard(${card.id})">✏️ Bearbeiten</button>
-                <button class="btn-secondary" onclick="fetchRateFromCard(${card.id})">🔎 Kurs von Seite holen</button>
-                <button class="btn-delete" onclick="deleteCard(${card.id})">🗑️ Löschen</button>
-            </div>
+            <p style="font-size:0.85rem; color:#666;">${card.rateUrl ? 'Rate-Quelle: ' + card.rateUrl : 'Keine Rate-Quelle'}</p>
         </div>
     `).join('');
 }
@@ -239,37 +230,11 @@ function saveToStorage() {
 }
 
 function loadFromStorage() {
-    const data = localStorage.getItem(STORAGE_KEY);
-    cards = data ? JSON.parse(data) : [];
-
-    // Wenn noch keine Karten im Storage sind, füge exemplarische Karten hinzu
-    if (!cards || cards.length === 0) {
-        cards = [
-            {
-                id: 1001,
-                name: 'Easybank (EUR/USD) - Beispiel',
-                fee: 1.5,
-                rateUrl: 'https://www.easybank.at/markets/waehrungen-zinsen',
-                // extrahiert den Wert im <span data-streaming-last> für EUR-USD
-                rateRegex: '<tr[^>]*EUR-USD[^>]*>[\\s\\S]*?<span[^>]*data-streaming-last[^>]*>([0-9\\.,]+)<\\/span>',
-                lastFetchedRate: null,
-                fixedRate: null,
-                rateMarkup: 0
-            },
-            {
-                id: 1002,
-                name: 'CardComplete (USD) - Beispiel',
-                fee: 1.75,
-                rateUrl: 'https://www.cardcomplete.com/service/umsatznachricht/fremdwaehrungen/USD/',
-                // einfache Zelle mit class="text-end" enthält Verkaufskurs (Komma Dezimaltrennzeichen)
-                rateRegex: '<td\\s+class=["\\']text-end["\\'][^>]*>\\s*([0-9\\.,]+)\\s*<\\/td>',
-                lastFetchedRate: null,
-                fixedRate: null,
-                rateMarkup: 0
-            }
-        ];
+    // App verwendet fest hartkodierte Karten. Schreibe diese ins Storage zur Persistenz.
+    try {
         saveToStorage();
-        console.log('Beispiel-Karten wurden hinzugefügt (falls kein Nutzer-Data vorhanden)');
+    } catch (err) {
+        console.warn('Konnte hartkodierte Karten nicht in Storage schreiben:', err);
     }
 }
 

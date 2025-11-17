@@ -74,12 +74,6 @@
             <section class="cards-management">
                 <h2>Deine Kreditkarten</h2>
                 
-                <div class="card-input-form">
-                    <input type="text" id="card-name" placeholder="z.B. ING DiBa VISA" value="">
-                    <input type="number" id="card-fee" placeholder="Gebühr %" value="0" min="0" step="0.1">
-                    <button onclick="addCard()" class="btn-primary">+ Karte hinzufügen</button>
-                </div>
-
                 <div id="cards-list" class="cards-list"></div>
             </section>
 
@@ -105,9 +99,6 @@
             <!-- Import/Export -->
             <section class="import-export">
                 <button onclick="exportData()" class="btn-secondary">📥 Daten exportieren (JSON)</button>
-                <button onclick="document.getElementById('import-file').click()" class="btn-secondary">📤 Daten importieren</button>
-                <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData()">
-                <button onclick="clearAllData()" class="btn-danger">🗑️ Alle Daten löschen</button>
             </section>
         </main>
 
