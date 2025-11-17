@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kreditkarten Gebührenvergleich</title>
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" href="/icons/icon.svg">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,6 +15,9 @@
         <header>
             <h1>💳 Kreditkarten Gebührenvergleich</h1>
             <p>Vergleiche Fremdwährungsgebühren und finde die beste Karte für deine Reise</p>
+            <div style="margin-top:12px; display:flex; justify-content:center; gap:10px;">
+                <button onclick="promptInstall()" id="install-btn" class="btn-secondary">🔌 Installieren</button>
+            </div>
         </header>
 
         <main>
@@ -108,5 +115,29 @@
     </div>
 
     <script src="app.js"></script>
+    <!-- Optional PWA install prompt helper -->
+    <script>
+        // Minimal listener that captures the beforeinstallprompt event for later use
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Optionally show a custom install button later
+            console.log('PWA: beforeinstallprompt event captured');
+        });
+
+        // Small function to show the install prompt if available
+        function promptInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    console.log('User choice:', choiceResult.outcome);
+                    deferredPrompt = null;
+                });
+            } else {
+                alert('Installieren nicht verfügbar. Stelle sicher, dass die App über HTTPS oder localhost ausgeführt wird');
+            }
+        }
+    </script>
 </body>
 </html>

@@ -135,6 +135,8 @@ Best-FX/
 ├── index.html          # Hauptseite
 ├── styles.css          # Stylesheet
 ├── app.js              # JavaScript Logik
+├── manifest.json       # PWA Manifest
+├── sw.js               # Service Worker (offline cache)
 ├── README.md           # Diese Datei
 └── .github/
     └── workflows/      # GitHub Actions (optional)
@@ -150,6 +152,21 @@ Die App läuft bereits auf GitHub Pages. Um sie für dein eigenes Repository zu 
 4. Speichern
 
 Deine App ist dann unter `https://USERNAME.github.io/Best-FX/` erreichbar.
+
+## 📱 PWA (Installierbar auf Mobilgeräten)
+
+Dieses Projekt ist als Progressive Web App (PWA) konfiguriert. Du kannst die Seite installieren, damit sie sich wie eine native App verhält.
+
+Voraussetzungen:
+- Die Seite muss über HTTPS laufen (oder `localhost`).
+- Ein Service Worker muss registriert werden (wird automatisch gemacht)
+
+Installation (Android Chrome):
+1. Öffne die Seite (z.B. `http://localhost:8000` in deinem lokalen Server oder GitHub Pages URL)
+2. Chrome zeigt eine Option in der Adresszeile oder im Menü: „Zum Startbildschirm hinzufügen“ oder „Installieren".
+3. Nach der Installation startet die App im Fullscreen-Modus.
+
+Für lokale Installation auf dem Android-Handy verwende die Anweisungen in `OFFLINE.md` (Abschnitt Termux — localhost ist eine sichere Quelle für PWA-Installation).
 
 ## 📝 Gebühren-Ressourcen
 

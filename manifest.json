@@ -1,0 +1,18 @@
+{
+  "name": "Best-FX — Kreditkarten Vergleich",
+  "short_name": "Best-FX",
+  "description": "Vergleiche Fremdwährungsgebühren deiner Kreditkarten — offlinefähig und installierbar.",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
