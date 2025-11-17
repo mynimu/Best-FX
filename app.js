@@ -214,6 +214,33 @@ async function autoFetchAllRates() {
     }
 }
 
+// UI wrapper to refresh all rates with status updates
+async function refreshAllRatesUI() {
+    const status = document.getElementById('refresh-status');
+    if (status) status.textContent = 'Kurse werden aktualisiert...';
+    try {
+        for (const card of cards) {
+            if (card.rateUrl && card.rateRegex) {
+                try {
+                    if (status) status.textContent = `Lade: ${card.name}`;
+                    await fetchRateForCard(card, true);
+                } catch (e) {
+                    console.warn('Fehler beim Laden für', card.name, e.message);
+                }
+                // kurz warten
+                await new Promise(r => setTimeout(r, 200));
+            }
+        }
+        renderCards();
+        updateComparison();
+        if (status) status.textContent = 'Aktualisierung abgeschlossen';
+        setTimeout(() => { if (status) status.textContent = ''; }, 3000);
+    } catch (e) {
+        if (status) status.textContent = 'Fehler beim Aktualisieren';
+        console.error('refreshAllRatesUI error', e);
+    }
+}
+
 // ========== Modal: Test / Edit Rate Source ==========
 let __modalCardId = null;
 function openTestModal(cardId) {
